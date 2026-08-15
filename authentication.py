@@ -1,9 +1,13 @@
+import configparser
 import requests
 from datetime import datetime, timedelta
-
-TOKEN_URL = "https://auth.opensky-network.org/auth/realms/opensky-network/protocol/openid-connect/token"
-CLIENT_ID = "your_client_id"
-CLIENT_SECRET = "your_client_secret"
+config = configparser.ConfigParser()
+config.read("environment.cfg")
+print("Files:", config.read("environment.cfg"))
+print("Sections:", config.sections())
+CLIENT_ID = config["oauth"]["CLIENT_ID"]
+CLIENT_SECRET = config["oauth"]["CLIENT_SECRET"]
+TOKEN_URL = config["oauth"]["TOKEN_URL"]
 
 # How many seconds before expiry to proactively refresh the token.
 TOKEN_REFRESH_MARGIN = 30
