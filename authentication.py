@@ -1,10 +1,12 @@
 import configparser
+from pathlib import Path
 import requests
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 config = configparser.ConfigParser()
-config.read("environment.cfg")
-print("Files:", config.read("environment.cfg"))
-print("Sections:", config.sections())
+PROJECT_ROOT = Path(__file__).resolve().parent
+config_file = PROJECT_ROOT / "environment.cfg"
+config.read(config_file)
 CLIENT_ID = config["oauth"]["CLIENT_ID"]
 CLIENT_SECRET = config["oauth"]["CLIENT_SECRET"]
 TOKEN_URL = config["oauth"]["TOKEN_URL"]
@@ -12,6 +14,11 @@ TOKEN_URL = config["oauth"]["TOKEN_URL"]
 # How many seconds before expiry to proactively refresh the token.
 TOKEN_REFRESH_MARGIN = 30
 
+def getUnixTime(secondsAgo=0):
+    now = datetime.now(timezone.utc)
+    now = now + timedelta(seconds=secondsAgo)
+    print("Current time:", now)
+    return int(now.timestamp())
 
 class TokenManager:
     def __init__(self):
@@ -51,8 +58,12 @@ class TokenManager:
 tokens = TokenManager()
 
 # Use it for any API call - the token is refreshed automatically.
+begin = 1786827600
+end = 1786831200
+requestUrl = "https://opensky-network.org/api/flights/arrival?airport=EDDS&begin=" + str(begin) + "&end=" + str(end)
+print("Request URL:", requestUrl)
 response = requests.get(
-    "https://opensky-network.org/api/states/all",
+    requestUrl,
     headers=tokens.headers(),
 )
 print(response.json())
