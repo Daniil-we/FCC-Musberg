@@ -1,18 +1,20 @@
-#!C:/xampp/flight-app/.venv/Scripts/python.exe
+#!C:\Users\Даниил\AppData\Local\Python\bin\python.exe
 
 import html
 import json
+import io
 import sys
 import traceback
 from configparser import ConfigParser
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from zoneinfo import ZoneInfo
-
 import requests
 
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
-CONFIG_FILE = Path(r"C:\xampp\flight-config\environment.cfg")
+CACHE_FILE = Path(r"C:\xampp\FCC-Musberg\flight_cache.json")
+CONFIG_FILE = Path(r"C:\xampp\FCC-Musberg\environment.cfg")
 AIRPORT_CODE = "STR"
 
 API_URL = (
@@ -25,7 +27,37 @@ def output_headers(content_type="text/html; charset=utf-8"):
     print(f"Content-Type: {content_type}")
     print("Cache-Control: no-store")
     print()
+    
+def is_cache_valid():
+    """Проверка: не устарел ли кэш (менее 1 часа)."""
+    if not CACHE_FILE.exists():
+        return False
+    try:
+        with open(CACHE_FILE, 'r', encoding="utf-8") as f:
+            cache_data = json.load(f)
+        cache_time = datetime.fromisoformat(cache_data["timestamp"])
+        return (datetime.now(ZoneInfo("Europe/Berlin")) - cache_time) < timedelta(hours=1)
+    except Exception:
+        return False
 
+def read_cache():
+    """Чтение данных из кэша."""
+    with open(CACHE_FILE, 'r', encoding="utf-8") as f:
+        return json.load(f)["data"]
+    
+def read_cache_timestamp():
+    """Чтение timestamp из кэша."""
+    with open(CACHE_FILE, 'r') as f:
+        return json.load(f)["timestamp"]
+
+def write_cache(data):
+    """Запись данных в кэш с временной меткой."""
+    cache_entry = {
+        "timestamp": datetime.now(ZoneInfo("Europe/Berlin")).isoformat(),
+        "data": data
+    }
+    with open(CACHE_FILE, 'w', encoding="utf-8") as f:
+        json.dump(cache_entry, f)
 
 def load_api_key():
     config = ConfigParser()
@@ -75,7 +107,7 @@ def get_stuttgart_flights(api_key):
 
         # Return a total window of 90 minutes:
         # 30 minutes before now and 60 minutes after now.
-        "durationMinutes": 90,
+        "durationMinutes": 60,
 
         # Return both arrivals and departures.
         "direction": "Both",
@@ -206,14 +238,11 @@ def create_flight_rows(flights, direction):
     return "\n".join(rows)
 
 
-def render_page(data):
+def render_page(data, generated_at):
     arrivals = data.get("arrivals") or []
     departures = data.get("departures") or []
 
-    berlin = ZoneInfo("Europe/Berlin")
-    generated_at = datetime.now(berlin).strftime(
-        "%d.%m.%Y %H:%M:%S %Z"
-    )
+    updated_time = generated_at[0:19].replace("T", " ")
 
     arrival_rows = create_flight_rows(
         arrivals,
@@ -229,7 +258,7 @@ def render_page(data):
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <meta http-equiv="refresh" content="300">
+    <meta http-equiv="refresh" content="60">
     <meta name="viewport"
           content="width=device-width, initial-scale=1">
     <title>Stuttgart Airport Flights</title>
@@ -315,7 +344,7 @@ def render_page(data):
     <h1>Stuttgart Airport</h1>
 
     <div class="updated">
-        Airport: STR / EDDS · Updated: {escape(generated_at)}
+        Airport: STR / EDDS - Updated: {escape(updated_time)}
     </div>
 
     <div class="summary">
@@ -369,8 +398,8 @@ def render_page(data):
     </div>
 
     <p class="note">
-        Time window: 30 minutes before now through
-        60 minutes after now. The page refreshes every five minutes.
+        Time window: 30 minutes before refresh through
+        30 minutes after refresh. The page refreshes every hour.
     </p>
 </main>
 </body>
@@ -379,11 +408,16 @@ def render_page(data):
 
 def main():
     try:
-        api_key = load_api_key()
-        flight_data = get_stuttgart_flights(api_key)
+        if is_cache_valid():
+            flight_data = read_cache()
+        else:
+            api_key = load_api_key()
+            flight_data = get_stuttgart_flights(api_key)
+            write_cache(flight_data)
+
 
         output_headers()
-        print(render_page(flight_data))
+        print(render_page(flight_data, read_cache_timestamp()))
 
     except Exception as error:
         output_headers()
