@@ -1,5 +1,10 @@
 #!C:\Users\Даниил\AppData\Local\Python\bin\python.exe
 
+import pycountry
+import pandas
+import re
+import geonamescache
+import gettext
 import html
 import json
 import io
@@ -10,9 +15,13 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from zoneinfo import ZoneInfo
 import requests
+from eng_to_ru import Translator
 
+translator = Translator()
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+russian = gettext.translation("iso3166-1", pycountry.LOCALES_DIR, languages=["ru"])
 
+CITIES_CSV_PATH = Path(r"C:\xampp\FCC-Musberg\_cities.csv")
 CACHE_FILE = Path(r"C:\xampp\FCC-Musberg\flight_cache.json")
 CONFIG_FILE = Path(r"C:\xampp\FCC-Musberg\environment.cfg")
 AIRPORT_CODE = "STR"
@@ -22,6 +31,12 @@ API_URL = (
     f"/flights/airports/iata/{AIRPORT_CODE}"
 )
 
+gc = geonamescache.GeonamesCache()
+
+def search_csv(file_path, column_name, search_term):
+    df = pandas.read_csv(file_path)
+    result = df[df[column_name] == search_term]
+    return result.to_dict('records') if not result.empty else None
 
 def output_headers(content_type="text/html; charset=utf-8"):
     print(f"Content-Type: {content_type}")
@@ -36,7 +51,7 @@ def is_cache_valid():
         with open(CACHE_FILE, 'r', encoding="utf-8") as f:
             cache_data = json.load(f)
         cache_time = datetime.fromisoformat(cache_data["timestamp"])
-        return (datetime.now(ZoneInfo("Europe/Berlin")) - cache_time) < timedelta(hours=1)
+        return (datetime.now(ZoneInfo("Europe/Berlin")) - cache_time) < timedelta(minutes=30)
     except Exception:
         return False
 
@@ -139,20 +154,49 @@ def get_stuttgart_flights(api_key):
 
     return response.json()
 
+def get_russian_alternate_name(city):
+    alternate_names = city.get("alternatenames", [])
+    print(f"Alternate names for {city.get('name')}: {alternate_names}")
+    for name in alternate_names:
+        if re.search(r"[А-Яа-яЁё]", name):
+            return name
+    return city.get("name", "Неизвестный город")
 
 def get_airport_name(flight_section):
     airport = flight_section.get("airport") or {}
+    airport_name = ""
+    airport_code = ""
+    country_name_ru = ""
+    country_name = ""
+    try:
+        airport_name = airport.get("name")
+    except Exception:
+        airport_name = "Unknown airport"
+    try:
+        airport_iata = airport.get("iata")
+        airport_icao = airport.get("icao")
+        airport_code = airport_iata or airport_icao
+    except Exception:
+        airport_code = "Unknown code"
+    try:
+        country_code = airport.get("countryCode") or "Unknown country"
+        country_name = pycountry.countries.lookup(country_code).name
+    except LookupError:
+        country_name = "Unknown country"
+    try:
+        country_name_ru = russian.gettext(country_name)
+    except Exception:
+        country_name_ru = "Неизвестная страна"
+    """try:
+        airport_name_ru = search_csv(CITIES_CSV_PATH, "title_en",  airport_name)
+    except Exception:
+        airport_name_ru = "Неизвестный город"cities = gc.get_cities_by_name(airport_name)
+    airport_name_ru = "Неизвестный аэропорт"
+    if cities:
+        city = next(iter(cities[0].values()))
+        airport_name_ru = get_russian_alternate_name(city)"""
 
-    airport_name = airport.get("name") or "Unknown airport"
-    airport_iata = airport.get("iata")
-    airport_icao = airport.get("icao")
-
-    airport_code = airport_iata or airport_icao or ""
-
-    if airport_code:
-        return f"{airport_name} ({airport_code})"
-
-    return airport_name
+    return f"{airport_name} - {country_name} ({airport_code}) | {country_name_ru}"
 
 
 def get_flight_number(flight):
