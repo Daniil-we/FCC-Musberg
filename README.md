@@ -1,6 +1,6 @@
 # FCC-Musberg
 
-**FCC-Musberg** is an educational web application for a fictional **Flight Control Center in Musberg**, near Stuttgart, Germany. It was developed by school student **Daniel Khailov** to display the latest arrivals and departures for **Stuttgart Airport (STR)** and provide useful details about current flights.
+**FCC-Musberg** is an educational web application for a fictional **Flight Control Center in Musberg**, near Stuttgart, Germany. It was developed by school student **Daniil Khailov** to display the latest arrivals and departures for **Stuttgart Airport (STR)** and provide useful details about current flights.
 
 The project demonstrates practical skills in Python development, integration with an external flight-data API, data processing, and multilingual location translation.
 
@@ -227,7 +227,7 @@ The availability and accuracy of individual fields depend on the data returned b
 
 ## Learning Outcomes
 
-By developing FCC-Musberg, Daniel Khailov demonstrates skills in:
+By developing FCC-Musberg, Daniil Khailov demonstrates skills in:
 
 - Python programming
 - API authentication and request handling
@@ -273,7 +273,7 @@ The `_cities.json` dataset is derived from the external [x88/i18nGeoNamesDB](htt
 
 ## Author
 
-**Daniel Khailov**  
+**Daniil Khailov**  
 School student and developer of FCC-Musberg
 
 ---
