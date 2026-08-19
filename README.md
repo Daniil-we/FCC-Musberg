@@ -127,7 +127,7 @@ The data originates from the open-source **i18nGeoNamesDB** project:
 
 https://github.com/x88/i18nGeoNamesDB
 
-The i18nGeoNamesDB project provides a multilingual geographic database containing countries, regions, and cities with translations in multiple languages, including Russian and English. 【1-4ce783】
+The i18nGeoNamesDB project provides a multilingual geographic database containing countries, regions, and cities with translations in multiple languages, including Russian and English.
 
 Download the geographic dataset from the i18nGeoNamesDB project and create or export the `_cities.json` file used by FCC-Musberg.
 
