@@ -119,30 +119,37 @@ config_file = r"C:\xampp\cgi-bin\environment.cfg"
 
 Also verify that the path used by the script for `_cities.json` is correct. The file contains geographic data derived from [i18nGeoNamesDB](https://github.com/x88/i18nGeoNamesDB).
 
-### 3. Deploy the required files
+### 3. Download and Prepare `_cities.json`
 
-Deploy the following files to the server's configured `cgi-bin` directory:
+FCC-Musberg uses the `_cities.json` file to translate city and country names into multiple languages, including English and Russian.
+
+The data originates from the open-source **i18nGeoNamesDB** project:
+
+https://github.com/x88/i18nGeoNamesDB
+
+The i18nGeoNamesDB project provides a multilingual geographic database containing countries, regions, and cities with translations in multiple languages, including Russian and English. 【1-4ce783】
+
+Download the geographic dataset from the i18nGeoNamesDB project and create or export the `_cities.json` file used by FCC-Musberg.
+
+The `_cities.json` file is used for:
+
+- Translating city names to Russian
+- Translating country names to Russian
+- Resolving alternative city names
+- Displaying multilingual flight information
+- Matching origin and destination locations returned by the AeroDataBox API
+
+After obtaining or generating `_cities.json`, copy it into the local `FCC-Musberg` folder on the server.
+
+Example:
 
 ```text
-aerodatabox.py
-environment.cfg
-_cities.json
-```
-
-For example, a typical XAMPP installation on Windows may use:
-
-```text
-C:\xampp\cgi-bin\
-```
-
-Example deployment structure:
-
-```text
-cgi-bin/
-└── aerodatabox.py
-FCC-Musberg/
-├── environment.cfg
-└── _cities.json
+C:\xampp\
+├── cgi-bin\
+│   └── aerodatabox.py
+└── FCC-Musberg\
+    ├── environment.cfg
+    └── _cities.json
 ```
 
 The Python script must have permission to read both `environment.cfg` and `_cities.json`.
